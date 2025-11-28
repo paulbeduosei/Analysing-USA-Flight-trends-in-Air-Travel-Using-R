@@ -1,0 +1,68 @@
+# Import required packages
+library(dplyr)
+library(readr)
+
+# Load the data
+flights <- read_csv("flights2022-h2.csv", show_col_types = FALSE)
+airlines <- read_csv("airlines.csv", show_col_types = FALSE)
+airports <- read_csv("airports.csv", show_col_types = FALSE)
+
+frequent <- flights %>%
+  filter(origin %in% c("JFK", "LGA", "EWR")) %>%
+  left_join(airlines, by = "carrier", suffix = c("_flight", "_airline")) %>%
+  left_join(airports, by = c("dest" = "faa"), suffix = c("", "_airport")) %>%
+  rename(
+    airline_name = name,         # This is the airline name from airlines.csv
+    airport_name = name_airport  # This is the airport name from airports.csv
+  ) %>%
+  mutate(air_time = air_time / 60) %>%
+  group_by(airport_name, airline_name) %>%
+  summarise(
+    flights = n(),
+    avg_air_time = mean(air_time, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(flights)) %>%
+  slice_head(n = 1) %>%
+  select(airline_name, airport_name, flights, avg_air_time)
+frequent
+
+longest <- flights %>%
+  filter(origin %in% c("JFK", "LGA", "EWR")) %>%
+  left_join(airlines, by = "carrier", suffix = c("_flight", "_airline")) %>%
+  left_join(airports, by = c("dest" = "faa"), suffix = c("", "_airport")) %>%
+  rename(
+    airline_name = name,         # This is the airline name from airlines.csv
+    airport_name = name_airport  # This is the airport name from airports.csv
+  ) %>%
+  mutate(air_time = air_time / 60) %>%
+  group_by(airport_name, airline_name) %>%
+  summarise(
+    flights = n(),
+    avg_air_time = mean(air_time, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(avg_air_time )) %>%
+  slice_head(n = 1) %>%
+  select(airline_name, airport_name, avg_air_time)
+longest
+
+least_sol <- flights %>%
+  filter(origin == "JFK") %>%
+  left_join(airlines, by = "carrier", suffix = c("_flight", "_airline")) %>%
+  left_join(airports, by = c("dest" = "faa"), suffix = c("", "_airport")) %>%
+  rename(
+    airline_name = name,         # This is the airline name from airlines.csv
+    airport_name = name_airport  # This is the airport name from airports.csv
+  ) %>%
+  mutate(air_time = air_time / 60) %>%
+  group_by(airport_name) %>%
+  summarise(
+    flights = n(),
+    .groups = "drop"
+  ) %>% 
+  arrange(flights) %>%
+  slice_head(n = 1) %>%
+  select(airport_name, flights)
+least <- apply(least_sol, 1, paste, collapse = ", ")
+least
